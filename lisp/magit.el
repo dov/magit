@@ -2950,6 +2950,7 @@ doesn't find the executable, then consult the info node
   (require 'magit-blame)
   (unless (load "magit-autoloads" t t)
     (require 'magit-submodule)
+    (require 'magit-subtree)
     (require 'magit-ediff)
     (require 'magit-extras)
     (require 'git-rebase)))
