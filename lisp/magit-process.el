@@ -285,17 +285,17 @@ before use.
 Process output goes into a new section in the buffer returned by
 `magit-process-buffer'."
   (run-hooks 'magit-pre-call-git-hook)
-  (apply #'magit-call-process magit-git-executable
-         (magit-process-git-arguments args)))
+  (magit-call-process #'magit-process-file magit-git-executable
+                      (magit-process-git-arguments args)))
 
-(defun magit-call-process (program &rest args)
+(defun magit-call-process (call-process-fun program args)
   "Call PROGRAM synchronously in a separate process.
 Process output goes into a new section in the buffer returned by
 `magit-process-buffer'."
   (-let [(process-buf . section) (magit-process-setup program args)]
     (magit-process-finish
      (let ((inhibit-read-only t))
-       (apply #'magit-process-file program nil process-buf nil args))
+       (apply call-process-fun program nil process-buf nil args))
      process-buf (current-buffer) default-directory section)))
 
 (defun magit-process-file (&rest args)
@@ -338,16 +338,11 @@ flattened before use."
                     (eq (process-status magit-this-process) 'run))
           (sleep-for 0.005)))
     (run-hooks 'magit-pre-call-git-hook)
-    (-let* ((process-environment (append (magit-cygwin-env-vars)
-                                         process-environment))
-            (flat-args (magit-process-git-arguments args))
-            ((process-buf . section)
-             (magit-process-setup magit-git-executable flat-args))
-            (inhibit-read-only t))
-      (magit-process-finish
-       (apply #'call-process-region (point-min) (point-max)
-              magit-git-executable nil process-buf nil flat-args)
-       process-buf nil default-directory section))))
+    (let ((process-environment (append (magit-cygwin-env-vars)
+                                       process-environment)))
+      (magit-call-process
+       (apply-partially #'call-process-region (point-min) (point-max))
+       magit-git-executable (magit-process-git-arguments args)))))
 
 (defun magit-run-git-with-logfile (file &rest args)
   "Call Git in a separate process and log its output to FILE.
